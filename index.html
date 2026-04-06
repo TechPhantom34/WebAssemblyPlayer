@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WASM Native Player</title>
+    <style>
+        :root { color-scheme: dark; }
+        body { font-family: system-ui; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #121212; color: white; }
+        .card { background: #1e1e1e; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        button { background: #00dc82; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.2s; }
+        button:hover { transform: scale(1.05); }
+        #status { margin-top: 1rem; color: #aaa; font-family: monospace; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>WASM Native Runner</h2>
+        <button id="runBtn">Modülü Başlat</button>
+        <div id="status">Bekleniyor...</div>
+    </div>
+
+    <script>
+        const btn = document.getElementById('runBtn');
+        const status = document.getElementById('status');
+
+        // WASM dosyanızın adı buraya gelmeli
+        const wasmFile = 'doom.wadm'; 
+
+        async function initWasm() {
+            status.innerText = "Yükleniyor...";
+            
+            try {
+                // En optimize yükleme yöntemi
+                const obj = await WebAssembly.instantiateStreaming(
+                    fetch(wasmFile),
+                    {
+                        // Eğer WASM dosyanız dışarıdan (JS'den) fonksiyon bekliyorsa buraya eklenir
+                        env: {
+                            sayHello: () => console.log("WASM'dan selam geldi!"),
+                            memory: new WebAssembly.Memory({ initial: 256 })
+                        }
+                    }
+                );
+
+                status.innerText = "Yükleme Başarılı!";
+                console.log("WASM Dışa Aktarılanlar:", obj.instance.exports);
+
+                // Örnek: WASM içindeki 'main' veya 'start' fonksiyonunu çağırma
+                if(obj.instance.exports.main) {
+                    const result = obj.instance.exports.main();
+                    status.innerText = "Sonuç: " + result;
+                }
+
+            } catch (err) {
+                status.innerText = "Hata: " + err.message;
+                console.error("Detaylı Hata:", err);
+            }
+        }
+
+        btn.addEventListener('click', initWasm);
+    </script>
+</body>
+</html>
